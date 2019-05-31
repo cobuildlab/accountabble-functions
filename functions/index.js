@@ -9,7 +9,7 @@ exports.createPaymentRequest = functions.https.onRequest(async (req, res) => {
   const stripe = new Stripe(config.STRIPE_API_KEY);
   try {
     let { status } = await stripe.charges.create({
-      amount: 15,
+      amount: 1500,
       currency: "usd",
       description: "Accountabble Membership",
       source: req.body
