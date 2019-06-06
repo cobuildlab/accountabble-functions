@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
-const cors = require("cors");
+const cors = require("cors")("*");
 
 const config = require("./config");
 
