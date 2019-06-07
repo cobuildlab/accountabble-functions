@@ -23,6 +23,7 @@ exports.createPaymentRequest = functions.https.onCall(
       };
     } catch (err) {
       return {
+        err: err,
         statusCode: 500,
         details: "Payment Request Failed"
       };
