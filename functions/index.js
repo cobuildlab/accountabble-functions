@@ -15,7 +15,7 @@ exports.createPaymentRequest = functions.https.onRequest((req, res) => {
         amount: 1500,
         currency: "usd",
         description: "Accountabble Membership",
-        source: req.body
+        source: req.body.data
       });
       return res
         .json({ status })
