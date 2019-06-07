@@ -7,27 +7,25 @@ const config = require("./config");
 
 admin.initializeApp();
 
-exports.createPaymentRequest = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+exports.createPaymentRequest = functions.https.onCall(
+  async (data, contenxt) => {
+    const token = data.token;
     const stripe = new Stripe(config.STRIPE_API_KEY);
     try {
       let { status } = await stripe.charges.create({
         amount: 1500,
         currency: "usd",
         description: "Accountabble Membership",
-        source: req.body.data
+        source: token
       });
-      return res
-        .json({ status })
-        .status(200)
-        .end();
+      return {
+        payment: status
+      };
     } catch (err) {
-      return res
-        .json({
-          statusCode: 500,
-          details: "Payment Request Failed"
-        })
-        .end();
+      return {
+        statusCode: 500,
+        details: "Payment Request Failed"
+      };
     }
-  });
-});
+  }
+);
