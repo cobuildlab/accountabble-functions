@@ -17,7 +17,10 @@ exports.createPaymentRequest = functions.https.onRequest((req, res) => {
         description: "Accountabble Membership",
         source: req.body
       });
-      return res.json({ status });
+      return res
+        .json({ status })
+        .status(200)
+        .end();
     } catch (err) {
       return res
         .json({
