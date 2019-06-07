@@ -7,8 +7,8 @@ const config = require("./config");
 
 admin.initializeApp();
 
-exports.createPaymentRequest = functions.https.onRequest((req, res) => {
-  cors(req, res, async () => {
+exports.createPaymentRequest = functions.https.onRequest(
+  cors(async (req, res) => {
     const stripe = new Stripe(config.STRIPE_API_KEY);
     try {
       let { status } = await stripe.charges.create({
@@ -29,5 +29,5 @@ exports.createPaymentRequest = functions.https.onRequest((req, res) => {
         })
         .end();
     }
-  });
-});
+  })
+);
