@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
 const config = require("./config");
+const sgMail = require('@sendgrid/mail') 
 
 admin.initializeApp();
 
@@ -29,3 +30,18 @@ exports.createPaymentRequest = functions.https.onCall(
     // }
   }
 );
+
+
+
+export const helloWordl = functions.https.onRequest((request,response)=>{
+  console.log( 'hello ')
+  request.send('hello cesar')
+  
+})
+
+
+
+
+
+
+
