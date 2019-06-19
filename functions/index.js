@@ -72,7 +72,7 @@ const mailTransport = nodemailer.createTransport({
 // Your company name to include in the emails
 // TODO: Change this to your app or company name to customize the email sent.
 // const APP_NAME = 'Accoutanbble';
-const toEmailCompany = 'david_avid1@hotmail.com'
+const toEmailCompany = 'contact@accountabble.com'
 
 // send email 
 exports.sendEmailWhithGmail = functions.https.onCall(({ data }) => {
