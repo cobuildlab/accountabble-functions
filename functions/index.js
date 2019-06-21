@@ -29,3 +29,54 @@ exports.createPaymentRequest = functions.https.onCall(
     // }
   }
 );
+
+
+
+
+// send mail with gmail
+const nodemailer = require('nodemailer')
+const gmailEmail = functions.config().gmail.email;
+const gmailPassword = functions.config().gmail.password;
+const mailTransport = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: gmailEmail,
+    pass: gmailPassword,
+  },
+});
+
+// send email 
+exports.sendEmailWhithGmail = functions.https.onCall(({ data }) => {
+  const name = data.name
+  const email = data.email
+  const comment = data.comment
+  
+  return sendEmail(name ,email,comment)
+  
+  
+})
+
+
+async function sendEmail ( name , email , comment ) {
+  
+  const toEmailCompany = 'contact@accountabble.com'
+  
+  // email message configuration
+  const MS = {
+    from: `${email} <noreply@firebase.com>`,
+    to: toEmailCompany, 
+    subject:`From ${name}`, 
+    text: comment
+  }
+    await mailTransport.sendMail(MS);
+    console.log(`Email sent to : ${email}`);
+    return null;
+
+
+} 
+
+
+
+
+
+
