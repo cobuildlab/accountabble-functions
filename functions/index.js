@@ -2,8 +2,6 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
 const config = require("./config");
-const sgMail = require('@sendgrid/mail') 
-sgMail.setApiKey(config.SEND_GRID_API_KEY);
 
 admin.initializeApp();
 
@@ -34,27 +32,6 @@ exports.createPaymentRequest = functions.https.onCall(
 
 
 
-exports.sendGridEmail = functions.https.onCall(( { data } )=>{
-  console.log(data.email)
-  console.log(data.comment)
-  const msg = {
-    to: 'david_avid1@hotmail.com',
-    from: data.email,
-    subject: 'Email test',
-    text:data.comment,
-    html: '<strong>and easy to do anywhere, even with Node.js</strong>'
-  }
-
-  sgMail.send(msg)
-
-})
-
-
-
-
-
-
-
 
 // send mail with gmail
 const nodemailer = require('nodemailer')
@@ -68,27 +45,23 @@ const mailTransport = nodemailer.createTransport({
   },
 });
 
-
-// Your company name to include in the emails
-// TODO: Change this to your app or company name to customize the email sent.
-// const APP_NAME = 'Accoutanbble';
-const toEmailCompany = 'contact@accountabble.com'
-
 // send email 
 exports.sendEmailWhithGmail = functions.https.onCall(({ data }) => {
   const name = data.name
   const email = data.email
   const comment = data.comment
-
+  
   return sendEmail(name ,email,comment)
-
-
+  
+  
 })
 
 
 async function sendEmail ( name , email , comment ) {
-
-// email message configuration
+  
+  const toEmailCompany = 'contact@accountabble.com'
+  
+  // email message configuration
   const MS = {
     from: `${email} <noreply@firebase.com>`,
     to: toEmailCompany, 
