@@ -5,10 +5,42 @@ const config = require("./config");
 
 admin.initializeApp();
 
-exports.createPaymentRequest = functions.https.onCall(
-  async (data) => {
+
+
+exports.mainFunction = functions.https.onCall(({data})=>{
+
+  // send email
+ _sendEmail({data})
+
+ //stripe
+ createPaymentRequest({data})
+
+ //googledrive folder
+  googleDrive({data})
+
+  const ref = admin.firestore().collection('subscriptions').doc(data.email);
+  ref.set({data})
+
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const createPaymentRequest = async (data) => {
     const token = data.token;
-    console.log(`DEBUG:`, data);
+    // console.log(`DEBUG:`, data);
 
 
 
@@ -24,6 +56,7 @@ exports.createPaymentRequest = functions.https.onCall(
     //   return {
     //     payment: status
     //   };
+      
     // } catch (err) {
     //   return {
     //     err: err,
@@ -32,7 +65,7 @@ exports.createPaymentRequest = functions.https.onCall(
     //   };
     // }
   }
-);
+
 
 
 
@@ -49,36 +82,31 @@ const mailTransport = nodemailer.createTransport({
   },
 });
 
-// send email 
-exports.sendEmailWhithGmail = functions.https.onCall(({ data }) => {
-  const name = data.name
-  const email = data.email
-  const comment = data.comment
-  
-  return sendEmail(name ,email,comment)
-  
-  
-})
 
 
-async function sendEmail ( name , email , comment ) {
-  
-  const toEmailCompany = 'contact@accountabble.com'
+
+const _sendEmail = async({ data }) => {
+
+  // contact@accountabble.com
+  const toEmailCompany = 'david_avid1@hotmail.com'
   
   // email message configuration
   const MS = {
-    from: `${email} <noreply@firebase.com>`,
+    from: `${data.email} <noreply@firebase.com>`,
     to: toEmailCompany, 
-    subject:`From ${name}`, 
-    text: comment
+    subject:`From ${data.name}`, 
+    text: data.comment
   }
     await mailTransport.sendMail(MS);
-    console.log(`Email sent to : ${email}`);
+    console.log(`Email sent to : ${data.email}`);
     return null;
-
 
 }
 
+exports.sendEmail = functions.https.onCall(({data})=>{
+  _sendEmail(data);
+
+})
 
 
 
@@ -97,7 +125,7 @@ const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 // time.
 const TOKEN_PATH = 'token.json';
 
-exports.googleDrive = functions.https.onCall(({ data })=>{
+const googleDrive = ({ data })=>{
 
     // handler data
     const name = data.name
@@ -164,7 +192,7 @@ exports.googleDrive = functions.https.onCall(({ data })=>{
     
     }
   })
-  
+
     
   function uploadFile(auth,) {
 
@@ -216,7 +244,7 @@ exports.googleDrive = functions.https.onCall(({ data })=>{
 
   }
     
-  });
+  };
 
 
 
