@@ -3,6 +3,7 @@ const admin = require("firebase-admin");
 const Stripe = require("stripe");
 const config = require("./config");
 
+
 admin.initializeApp();
 
 
@@ -15,12 +16,12 @@ exports.mainFunction = functions.https.onCall(({data})=>{
  //stripe
  createPaymentRequest({data})
 
- //googledrive folder
+//  googledrive folder
   googleDrive({data})
 
   const ref = admin.firestore().collection('subscriptions').doc(data.email);
   ref.set({data})
-
+  
 
 })
 
@@ -38,32 +39,34 @@ exports.mainFunction = functions.https.onCall(({data})=>{
 
 
 
-const createPaymentRequest = async (data) => {
-    const token = data.token;
-    // console.log(`DEBUG:`, data);
+const createPaymentRequest = async ({data}) => {
+    const token = data.token.token.id;
+    console.log(`DEBUG:`,data);
+    console.log('Cesar', token)
 
 
 
     // remove
-    // const stripe = new Stripe(config.STRIPE_API_KEY);
-    // try {
-    //   let {status} = await stripe.charges.create({
-    //     amount: 1500,
-    //     currency: "usd",
-    //     description: "Accountabble Membership",
-    //     source: token
-    //   });
-    //   return {
-    //     payment: status
-    //   };
+    const stripe = new Stripe(functions.config().stripe.key);
+    try {
+      let status = await stripe.charges.create({
+        amount: 1500,
+        currency: "usd",
+        description: "Accountabble Membership",
+        source: token
+      });
+      return {
+       Payment: status
+        
+      }
       
-    // } catch (err) {
-    //   return {
-    //     err: err,
-    //     statusCode: 500,
-    //     details: "Payment Request Failed"
-    //   };
-    // }
+    } catch (err) {
+      return {
+        err: err,
+        statusCode: 500,
+        details: "Payment Request Failed"
+      };
+    }
   }
 
 
