@@ -1,5 +1,5 @@
 const config = {
-  STRIPE_API_KEY: "pk_test_0KrAwle3d2NRgwv5SFafypqq",
+  STRIPE_API_KEY: "sk_test_R1Dmm08KKiiTCtKcFMlu3bAP",
 };
 
 module.exports = config;
