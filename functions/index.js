@@ -1,27 +1,48 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
-const config = require("./config");
+const moment = require('moment-timezone');
+// const config = require("./config");
 
 
 admin.initializeApp();
 
 
 
-exports.mainFunction = functions.https.onCall(({data})=>{
-
+exports.mainFunction = functions.https.onCall( async({ basicInformation , coaching , token})=>{
+  
+  const data = {
+    basicInformation: basicInformation, 
+    coaching: coaching
+  }
+  
+  
   // send email
- _sendEmail({data})
+  _sendEmail({data})
+  
+  
+  
+  //stripe
+  const stripe = await createPaymentRequest({token});
+  const formateDate = moment(new Date()).tz("America/New_York").format()
+  const date = formateDate
+  const email = basicInformation.email
+  const payamentData = {
+      basicInformation:{ date , email },
+      stripe: stripe
+    }
 
- //stripe
- createPaymentRequest({data})
-
-//  googledrive folder
+  await admin.firestore().collection('payments').doc(basicInformation.email).set({payamentData})
+  
+  
+  //  googledrive folder
   googleDrive({data})
 
-  const ref = admin.firestore().collection('subscriptions').doc(data.email);
-  ref.set({data})
+  // 
+  await admin.firestore().collection('subscriptions').doc(basicInformation.email).set({data})
   
+  return 'succes'
+
 
 })
 
@@ -39,10 +60,10 @@ exports.mainFunction = functions.https.onCall(({data})=>{
 
 
 
-const createPaymentRequest = async ({data}) => {
-    const token = data.token.token.id;
-    console.log(`DEBUG:`,data);
-    console.log('Cesar', token)
+const createPaymentRequest = async ({token}) => {
+    // const token = data.token.token.id;
+    console.log(`DEBUG:`,token);
+    console.log('Cesar', token.token.id)
 
 
 
@@ -50,10 +71,10 @@ const createPaymentRequest = async ({data}) => {
     const stripe = new Stripe(functions.config().stripe.key);
     try {
       let status = await stripe.charges.create({
-        amount: 1500,
+        amount: 1,
         currency: "usd",
         description: "Accountabble Membership",
-        source: token
+        source: token.token.id
       });
       return {
        Payment: status
@@ -89,20 +110,19 @@ const mailTransport = nodemailer.createTransport({
 
 
 const _sendEmail = async({ data }) => {
-
   // contact@accountabble.com
   const toEmailCompany = 'david_avid1@hotmail.com'
   
   // email message configuration
   const MS = {
-    from: `${data.email} <noreply@firebase.com>`,
+    from: `${data.basicInformation.email} <noreply@firebase.com>`,
     to: toEmailCompany, 
-    subject:`From ${data.name}`, 
-    text: data.comment
+    subject:`From ${data.basicInformation.name}`, 
+    text: 'text testing'
   }
     await mailTransport.sendMail(MS);
-    console.log(`Email sent to : ${data.email}`);
-    return null;
+    console.log(`Email sent to : ${data.basicInformation.email}`);
+    // return null;
 
 }
 
@@ -124,15 +144,16 @@ const { google } = require('googleapis');
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 // The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
+// created automatically when the authorization flow completes for the first time.
 const TOKEN_PATH = 'token.json';
 
 const googleDrive = ({ data })=>{
 
     // handler data
-    const name = data.name
-    const comment = data.comment
+    const name = data.basicInformation.name
+    const body = data
+
+    console.log(body)
 
 
   // Load client secrets from a local file.
@@ -226,7 +247,18 @@ const googleDrive = ({ data })=>{
 
             const fileMedia = {
               mimeType: 'text/plain',
-              body : comment
+              body : `
+               BasicInformacion:
+                name:  ${body.basicInformation.name} 
+                email: ${body.basicInformation.email }
+                active: ${body.basicInformation.active}
+                date : ${new Date()}
+
+               Coaching:
+                category:  ${body.coaching.category}
+                frequency: ${body.coaching.frequency}
+                weeks: ${body.coaching.weeks}
+              `
             }
 
             drive.files.create({
