@@ -20,11 +20,11 @@ admin.initializeApp();
 
 exports.mainFunction = functions.https.onCall(async (data) => {
   console.log('data:', data);
-  const {basicInformation} = data;
+  const {basicInformation, coaching} = data;
   console.log('data:basicInformation', basicInformation);
   const FIRESTORE = admin.firestore();
   // send email
-  await _sendEmail({data: basicInformation});
+  await _sendEmail({data: basicInformation, coaching});
   //stripe
   const {payment} = await createPaymentRequest({data});
   const date = moment(new Date()).tz("America/New_York").format();
@@ -71,14 +71,14 @@ const createPaymentRequest = async ({data}) => {
 };
 
 
-const _sendEmail = async ({data}) => {
-  const toEmailCompany = 'contact@accountabble.com';
+const _sendEmail = async ({data, coaching}) => {
+  const toEmailCompany = 'info@accountabble.com';
   // email message configuration
   const MS = {
     from: `${data.email} <noreply@firebase.com>`,
     to: toEmailCompany,
     subject: `From ${data.name}`,
-    text: data.comment
+    text: JSON.stringify(data) + `<br>/<br/>` + JSON.stringify(coaching)
   };
   await mailTransport.sendMail(MS);
   console.log(`Email sent to : ${data.email}`);
