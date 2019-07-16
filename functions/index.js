@@ -24,7 +24,7 @@ exports.mainFunction = functions.https.onCall(async (data) => {
   console.log('data:basicInformation', basicInformation);
   const FIRESTORE = admin.firestore();
   // send email
-  // await _sendEmail({data: basicInformation});
+  await _sendEmail({data: basicInformation});
   //stripe
   const {payment} = await createPaymentRequest({data});
   const date = moment(new Date()).tz("America/New_York").format();
@@ -94,10 +94,10 @@ exports.sendEmail = functions.https.onCall(({data}) => {
 
 
 const createGoogleDriveFolder = ({data}) => {
-  console.log(`createGoogleDriveFolder:`, data);
+  const {basicInformation} = data;
+  console.log(`createGoogleDriveFolder:`, basicInformation);
   // handler data
-  const name = data.name;
-  const comment = data.comment;
+  const name = basicInformation.name;
   googleDrive((auth) => {
     console.log(`createGoogleDriveFolder:auth`, auth);
     const drive = google.drive({version: 'v3', auth});
@@ -119,7 +119,7 @@ const createGoogleDriveFolder = ({data}) => {
         console.log(`createGoogleDriveFolder:folder:`, file);
         const folderId = file.data.id;
         const fileCreate = {'name': name, parents: [folderId]};
-        const fileMedia = {mimeType: 'text/plain', body: comment};
+        const fileMedia = {mimeType: 'text/plain', body: JSON.stringify(data)};
 
         drive.files.create({
           resource: fileCreate,
