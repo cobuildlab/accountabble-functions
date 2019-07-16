@@ -53,7 +53,7 @@ const createPaymentRequest = async ({data}) => {
       amount: 100,
       currency: "usd",
       description: "Accountabble Membership",
-      source: token.token.id
+      source: token
     });
     console.log('createPaymentRequest:status:', status);
     return {
