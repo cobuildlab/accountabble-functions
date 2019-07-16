@@ -65,3 +65,8 @@ node_modules/
 .env
 
 .idea/
+
+
+#googledrive
+credentials.json
+token.json
