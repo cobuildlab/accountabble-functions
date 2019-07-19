@@ -65,8 +65,12 @@ node_modules/
 .env
 
 .idea/
+<<<<<<< HEAD
 
 
 #googledrive
 credentials.json
 token.json
+=======
+.DS_Store
+>>>>>>> a7c5d84e5ce2b7d4fe76f9efd5abe8afb6c31ce3
