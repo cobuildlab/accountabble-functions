@@ -1,10 +1,10 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
-const config = require("./config");
 const {google} = require('googleapis');
 const nodeMailer = require('nodemailer');
 const moment = require('moment-timezone');
+const googleDrive = require('./google-drive');
 const gmailEmail = functions.config().gmail.email;
 const gmailPassword = functions.config().gmail.password;
 const mailTransport = nodeMailer.createTransport({
@@ -14,38 +14,64 @@ const mailTransport = nodeMailer.createTransport({
     pass: gmailPassword,
   },
 });
-const googleDrive = require('./google-drive');
 admin.initializeApp();
 
-
 exports.mainFunction = functions.https.onCall(async (data) => {
-  console.log('data:', data);
-  const {basicInformation, coaching} = data;
-  console.log('data:basicInformation', basicInformation);
+  console.log('mainFunction:data:', data);
+  const {basicInformation, coaching, token: {token}} = data;
+  console.log('mainFunction:basicInformation', basicInformation);
+  console.log('mainFunction:coaching', coaching);
+  console.log('mainFunction:token', token);
   const FIRESTORE = admin.firestore();
-  // send email
-  await _sendEmail({data: basicInformation, coaching});
+  const email = basicInformation.email;
   //stripe
-  const {payment} = await createPaymentRequest({data});
-  const date = moment(new Date()).tz("America/New_York").format();
+  const customer = await createCustomerId(token.id, email);
+  const {payment} = await createPaymentRequest(customer);
   console.log('mainFunction:paymentStripe', payment);
-  await FIRESTORE.collection('payments').add({email: basicInformation.email, payment, date});
+  const date = moment(new Date()).tz("America/New_York").format();
+  console.log('mainFunction:date:', date);
+  const subscriptionsCollection = FIRESTORE.collection('subscriptions');
+
+  console.log('mainFunction:email:', email);
+  const subscription = await subscriptionsCollection.add(Object.assign({}, data, {
+    email,
+    date,
+    active: true,
+    customer,
+    billingData: token
+  }));
+  const paymentsCollection = FIRESTORE.collection('payments');
+  await paymentsCollection.add({email, payment, date, subscriptionId: subscription.id});
   // google drive folder
   await createGoogleDriveFolder({data});
-
+// send email
+  await _sendEmail({data: basicInformation, coaching});
   // Registering subscription
-  const ref = FIRESTORE.collection('subscriptions').doc(basicInformation.email);
-  await ref.set({data}, {merge: true});
-
   return {}
 });
 
 
-const createPaymentRequest = async ({data}) => {
-  const token = data.token.token.id;
-  console.log(`createPaymentRequest:data:`, data);
-  console.log('createPaymentRequest:token:', token);
+const createCustomerId = async (tokenId, email) => {
+  console.log(`createCustomerId:tokenId:`, tokenId, email);
+  // remove
+  const stripe = new Stripe(functions.config().stripe.key);
+  try {
+    let customer = await stripe.customers.create({
+      email,
+      description: `Accountabble Membership: ${email}`,
+      source: tokenId
+    });
+    console.log('createCustomerId:customer:', customer);
+    return customer;
+  } catch (err) {
+    console.log('createCustomerId:err:', err);
+    throw err;
+  }
+};
 
+
+const createPaymentRequest = async (customer) => {
+  console.log(`createPaymentRequest:customer:`, customer);
   // remove
   const stripe = new Stripe(functions.config().stripe.key);
   try {
@@ -53,7 +79,7 @@ const createPaymentRequest = async ({data}) => {
       amount: 100,
       currency: "usd",
       description: "Accountabble Membership",
-      source: token
+      customer: customer.id
     });
     console.log('createPaymentRequest:status:', status);
     return {
@@ -62,11 +88,7 @@ const createPaymentRequest = async ({data}) => {
 
   } catch (err) {
     console.log('createPaymentRequest:err:', err);
-    return {
-      err: err,
-      statusCode: 500,
-      details: "Payment Request Failed"
-    };
+    throw err;
   }
 };
 
@@ -91,8 +113,6 @@ exports.sendEmail = functions.https.onCall(({data}) => {
 
 
 // google drive
-
-
 const createGoogleDriveFolder = ({data}) => {
   const {basicInformation} = data;
   console.log(`createGoogleDriveFolder:`, basicInformation);
@@ -140,7 +160,28 @@ const createGoogleDriveFolder = ({data}) => {
 };
 
 
+exports.scheduledFunction = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+  console.log('scheduledFunction:context:', context);
+  const FIRESTORE = admin.firestore();
+  const subscriptionsCollection = FIRESTORE.collection('subscriptions');
+  const allSubscriptions = await subscriptionsCollection.where('active', '==', true).get();
+  if (allSubscriptions.empty) {
+    console.log('scheduledFunction:empty:', 'No subscriptions');
+    return;
+  }
 
+  allSubscriptions.forEach(async subscriptionDoc => {
+    const subscriptionId = subscriptionDoc.id;
+    const subscription = subscriptionDoc.data();
+    console.log('scheduledFunction:subscription:', subscriptionId, subscription);
+    const {payment} = await createPaymentRequest(subscription.customer);
+    console.log('scheduledFunction:paymentStripe', payment);
+    const date = moment(new Date()).tz("America/New_York").format();
+    const paymentsCollection = FIRESTORE.collection('payments');
+    await paymentsCollection.add({email: subscription.email, payment, date, subscriptionId});
+  });
+
+});
 
 
 
