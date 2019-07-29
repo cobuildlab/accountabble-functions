@@ -160,7 +160,7 @@ const createGoogleDriveFolder = ({data}) => {
 };
 
 
-exports.scheduledFunction = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+exports.scheduledFunction = functions.pubsub.schedule('0 20 * * 1').onRun(async (context) => {
   console.log('scheduledFunction:context:', context);
   const FIRESTORE = admin.firestore();
   const subscriptionsCollection = FIRESTORE.collection('subscriptions');
