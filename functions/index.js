@@ -53,6 +53,7 @@ exports.mainFunction = functions.https.onCall(async (data) => {
 
 const createCustomerId = async (tokenId, email) => {
   console.log(`createCustomerId:tokenId:`, tokenId, email);
+  console.log(`createCustomerId:stripe_key:`, functions.config().stripe.key);
   // remove
   const stripe = new Stripe(functions.config().stripe.key);
   try {
@@ -72,11 +73,12 @@ const createCustomerId = async (tokenId, email) => {
 
 const createPaymentRequest = async (customer) => {
   console.log(`createPaymentRequest:customer:`, customer);
+  console.log(`createPaymentRequest:stripe_key:`, functions.config().stripe.key);
   // remove
   const stripe = new Stripe(functions.config().stripe.key);
   try {
     let status = await stripe.charges.create({
-      amount: 100,
+      amount: 100, // $1
       currency: "usd",
       description: "Accountabble Membership",
       customer: customer.id
@@ -110,7 +112,6 @@ const _sendEmail = async ({data, coaching}) => {
 exports.sendEmail = functions.https.onCall(({data}) => {
   _sendEmail(data);
 });
-
 
 // google drive
 const createGoogleDriveFolder = ({data}) => {
@@ -159,8 +160,7 @@ const createGoogleDriveFolder = ({data}) => {
   });
 };
 
-
-exports.scheduledFunction = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+exports.scheduledFunction = functions.pubsub.schedule('every day 09:00').onRun(async (context) => {
   console.log('scheduledFunction:context:', context);
   const FIRESTORE = admin.firestore();
   const subscriptionsCollection = FIRESTORE.collection('subscriptions');
@@ -171,19 +171,34 @@ exports.scheduledFunction = functions.pubsub.schedule('every 1 minutes').onRun(a
   }
 
   allSubscriptions.forEach(async subscriptionDoc => {
+    // Subscription Data
     const subscriptionId = subscriptionDoc.id;
     const subscription = subscriptionDoc.data();
     console.log('scheduledFunction:subscription:', subscriptionId, subscription);
+
+    // Payments Data
+    const paymentsCollection = FIRESTORE.collection('payments');
+    const thisSubscriptionPayments = await paymentsCollection.where('subscriptionId', '==', subscriptionId).get();
+    let paymentCounter = 0;
+    thisSubscriptionPayments.forEach(() => paymentCounter++);
+    let numberOfWeeksForSubscription = 0;
+    if (subscription) {
+      if (subscription.coaching)
+        if (subscription.coaching.weeks)
+          numberOfWeeksForSubscription = parseInt(subscription.coaching.weeks);
+    }
+
+    //Subscription already completed
+    if (paymentCounter >= numberOfWeeksForSubscription) {
+      await subscriptionsCollection.doc(subscriptionId).set({active: false}, {merge: true});
+      console.log('scheduledFunction: Closing Subscription');
+      return;
+    }
+
     const {payment} = await createPaymentRequest(subscription.customer);
     console.log('scheduledFunction:paymentStripe', payment);
     const date = moment(new Date()).tz("America/New_York").format();
-    const paymentsCollection = FIRESTORE.collection('payments');
     await paymentsCollection.add({email: subscription.email, payment, date, subscriptionId});
   });
 
 });
-
-
-
-
-
