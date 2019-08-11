@@ -5,6 +5,7 @@ const {google} = require('googleapis');
 const nodeMailer = require('nodemailer');
 const moment = require('moment-timezone');
 const googleDrive = require('./google-drive');
+const emailFunctions = require('./email');
 const gmailEmail = functions.config().gmail.email;
 const gmailPassword = functions.config().gmail.password;
 const mailTransport = nodeMailer.createTransport({
@@ -44,8 +45,10 @@ exports.mainFunction = functions.https.onCall(async (data) => {
   await paymentsCollection.add({email, payment, date, subscriptionId: subscription.id});
   // google drive folder
   await createGoogleDriveFolder({data});
-// send email
+// send email to Marcus
   await _sendEmail({data: basicInformation, coaching});
+  // Send welcome Email
+  await emailFunctions.sendWelcomeEmail(email);
   // Registering subscription
   return {}
 });
