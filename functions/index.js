@@ -27,7 +27,8 @@ exports.mainFunction = functions.https.onCall(async (data) => {
   const email = basicInformation.email;
   //stripe
   const customer = await createCustomerId(token.id, email);
-  const {payment} = await createPaymentRequest(customer);
+  let payment = {};
+  // const {payment} = await createPaymentRequest(customer);
   console.log('mainFunction:paymentStripe', payment);
   const date = moment(new Date()).tz("America/New_York").format();
   console.log('mainFunction:date:', date);
@@ -81,7 +82,7 @@ const createPaymentRequest = async (customer) => {
   const stripe = new Stripe(functions.config().stripe.key);
   try {
     let status = await stripe.charges.create({
-      amount: 100, // $1
+      amount: 6000, // $1
       currency: "usd",
       description: "Accountabble Membership",
       customer: customer.id
@@ -163,7 +164,7 @@ const createGoogleDriveFolder = ({data}) => {
   });
 };
 
-exports.scheduledFunction = functions.pubsub.schedule('every day 09:00').onRun(async (context) => {
+exports.scheduledFunction = functions.pubsub.schedule('1 of month 09:00').onRun(async (context) => {
   console.log('scheduledFunction:context:', context);
   const FIRESTORE = admin.firestore();
   const subscriptionsCollection = FIRESTORE.collection('subscriptions');
@@ -198,7 +199,8 @@ exports.scheduledFunction = functions.pubsub.schedule('every day 09:00').onRun(a
       return;
     }
 
-    const {payment} = await createPaymentRequest(subscription.customer);
+    let payment = {};
+    // const {payment} = await createPaymentRequest(subscription.customer);
     console.log('scheduledFunction:paymentStripe', payment);
     const date = moment(new Date()).tz("America/New_York").format();
     await paymentsCollection.add({email: subscription.email, payment, date, subscriptionId});
