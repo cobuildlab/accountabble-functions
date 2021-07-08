@@ -21,7 +21,7 @@
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.26",
     "nodemailer": "^6.2.1",
-    "stripe": "^7.1.0"
+    "stripe": "^7.63.1"
   },
   "devDependencies": {
     "eslint": "^5.12.0",
