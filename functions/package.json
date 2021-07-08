@@ -18,7 +18,7 @@
     "firebase-admin": "~7.0.0",
     "firebase-functions": "^2.3.0",
     "googleapis": "^39.2.0",
-    "moment": "^2.24.0",
+    "moment": "^2.29.1",
     "moment-timezone": "^0.5.26",
     "nodemailer": "^6.2.1",
     "stripe": "^7.1.0"
